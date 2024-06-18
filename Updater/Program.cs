@@ -12,10 +12,14 @@ namespace Updater
         public static async Task Main(string[] args)
         {
             Console.WriteLine("Initializing...");
-            var host = Host.CreateDefaultBuilder(args).ConfigureServices(services =>
+            var host = Host.CreateDefaultBuilder(args)
+                .ConfigureServices((builder, services) =>
             {
                 services.AddSingleton<IDataStoreProvider, FileDataStoreProvider>();
                 services.AddSingleton<INetworkInfoProvider, NetworkInfoProvider>();
+                var section = builder.Configuration.GetSection(SqlServerDataStoreOptions.SqlServerDataStore);
+                services.Configure<SqlServerDataStoreOptions>(section);
+                services.AddTransient<ISqlServerDataStoreProvider, SqlServerDataStoreProvider>();
             }).Build();
 
             var config = host.Services.GetService<IConfiguration>();
@@ -39,7 +43,9 @@ namespace Updater
 
             if(!string.Equals(currentIp, lastIp, StringComparison.OrdinalIgnoreCase))
             {
-
+                Console.WriteLine("New IP Address found, updating DNS record");
+                var sqlDataStoreProvider = host.Services.GetRequiredService<ISqlServerDataStoreProvider>();
+                var cloudFlareSettings = await sqlDataStoreProvider.GetCloudFlareBaseSettings();
             }
             else
             {
