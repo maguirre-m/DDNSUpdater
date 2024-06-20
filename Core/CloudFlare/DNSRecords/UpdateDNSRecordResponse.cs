@@ -2,7 +2,7 @@
 
 namespace Core.CloudFlare.DNSRecords
 {
-    internal class UpdateDNSRecordResponse : ResponseBase
+    public class UpdateDNSRecordResponse : ResponseBase
     {
         public UpdateDNSRecordResult Result { get; set; }
 

@@ -1,11 +1,14 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Core.DataPersistance;
+using Core.Network;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Serilog;
 
 
 namespace Updater
 {
-    public class Startup
+    public sealed class Startup
     {
         public static IConfigurationRoot AddConfiguration(IHostEnvironment env)
         {
@@ -14,13 +17,29 @@ namespace Updater
             return builder.Build();
         }
 
-        public static void ConfigureServices(IServiceCollection services)
+        public static HostApplicationBuilder CreateBuilder(string[] args)
         {
-            // Add functionality to inject IOptions<T>
-            services.AddOptions();
+            var host = Host.CreateApplicationBuilder(args);
 
-            // Add our Config object so it can be injected
+            return host;
         }
-    }
+
+        public static void ConfigureServices(HostApplicationBuilder builder)
+        {
+            builder.Services.AddOptions();
+            builder.Services.AddSingleton<IDataStoreProvider, FileDataStoreProvider>();
+            builder.Services.AddSingleton<INetworkInfoProvider, NetworkInfoProvider>();
+            var section = builder.Configuration.GetSection(SqlServerDataStoreOptions.SqlServerDataStore);
+            builder.Services.Configure<SqlServerDataStoreOptions>(section);
+            builder.Services.AddTransient<ISqlServerDataStoreProvider, SqlServerDataStoreProvider>();
+
+            builder.Services.AddSerilog((services, config) =>
+            {
+                config.ReadFrom.Configuration(builder.Configuration)
+                .ReadFrom.Services(services)
+                .Enrich.FromLogContext();
+            });
+        }
+}
 }
     

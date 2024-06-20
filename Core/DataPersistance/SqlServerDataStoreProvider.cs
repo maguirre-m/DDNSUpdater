@@ -1,12 +1,9 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices.Marshalling;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.IdentityModel.Abstractions;
+using System.Data;
 
 namespace Core.DataPersistance
 {
@@ -45,36 +42,54 @@ namespace Core.DataPersistance
     public class SqlServerDataStoreProvider : ISqlServerDataStoreProvider
     {
         private readonly SqlServerDataStoreOptions _cloudFlareBaseSettings;
+        private readonly ILogger<SqlServerDataStoreProvider> _logger;
 
-        public SqlServerDataStoreProvider(IOptions<SqlServerDataStoreOptions> sqlProviderSettings)
+        public SqlServerDataStoreProvider(IOptions<SqlServerDataStoreOptions> sqlProviderSettings, ILogger<SqlServerDataStoreProvider> logger)
         {
             _cloudFlareBaseSettings = sqlProviderSettings.Value;
+            _logger = logger;
         }
 
         public async Task<CloudFlareBaseSettings> GetCloudFlareBaseSettings()
         {
-            using (var connection = new SqlConnection(_cloudFlareBaseSettings.ConnectionString))
+            try
             {
-                var ZoneIdKey = "ZoneId";
-                var ZoneTokenKey = "ApiKey";
-
-                var settings = await connection.QueryAsync<CloudFlareSetting>($"SELECT  * FROM CloudFlareSettings WHERE Name IN ('{ZoneIdKey}', '{ZoneTokenKey}')");
-
-                var baseSettings = new CloudFlareBaseSettings();
-
-                foreach (var setting in settings)
+                using (var connection = new SqlConnection(_cloudFlareBaseSettings.ConnectionString))
                 {
-                    if (setting.Name == ZoneIdKey)
-                    {
-                        baseSettings.ZoneId = setting.Value;
-                    }
-                    else
-                    {
-                        baseSettings.ApiKey = setting.Value;
-                    }
-                }
+                    var ZoneIdKey = "ZoneId";
+                    var ZoneTokenKey = "ApiKey";
 
-                return baseSettings;
+                    var settings = await connection.QueryAsync<CloudFlareSetting>($"SELECT  * FROM CloudFlareSettings WHERE Name IN ('{ZoneIdKey}', '{ZoneTokenKey}')");
+
+                    var settingsCount = settings.Count();
+
+                    if (settings != null && settingsCount != 2)
+                    {
+                       _logger.LogError("Expected to retrieve 2 CloudFlareSetting records but received {0} settings", settingsCount);
+                        throw new DataException($"Invalid amount of CloudFlareSetting records retrieved: {settingsCount}");
+                    }
+
+                    var baseSettings = new CloudFlareBaseSettings();
+
+                    foreach (var setting in settings)
+                    {
+                        if (setting.Name == ZoneIdKey)
+                        {
+                            baseSettings.ZoneId = setting.Value;
+                        }
+                        else
+                        {
+                            baseSettings.ApiKey = setting.Value;
+                        }
+                    }
+
+                    return baseSettings;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while attempting to retrieve CloudFlareSettings from the database: ");
+                throw;
             }
         }
 
