@@ -19,10 +19,14 @@ namespace Core.CloudFlare.DNSRecords
             public string Type { get; set; }
             [JsonPropertyName("comment")]
             public string? Comment { get; set; }
+            [JsonPropertyName("id")]
+            public string Id { get; set; }
             [JsonPropertyName("tags")]
             public string[]? Tags { get; set; }
             [JsonPropertyName("ttl")]
             public int? TTL { get; set; }
+            [JsonPropertyName("zone_id")]
+            public string ZoneId { get; set; }
         }
     }
 }
