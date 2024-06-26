@@ -102,20 +102,17 @@ namespace Updater
                                     }
                                     else
                                     {
-                                        var updateDNSRecordRequest = new UpdateDNSRecordRequest()
+                                        var updateDNSRecordRequest = new UpdateDNSRecordRequest.Data()
                                         {
-                                            RequestData = new UpdateDNSRecordRequest.Data()
-                                            {
-                                                Name = targetRecordInfo.Name,
-                                                Content = currentIp,
-                                                Proxied = targetRecordInfo.Proxied,
-                                                Comment = targetRecordInfo.Comment,
-                                                Id = targetRecordInfo.Id,
-                                                Tags = targetRecordInfo.Tags.ToArray(),
-                                                Type = targetRecordInfo.Type,
-                                                TTL = targetRecordInfo.TTL,
-                                                ZoneId = targetRecordInfo.ZoneId
-                                            }
+                                            Name = targetRecordInfo.Name,
+                                            Content = currentIp,
+                                            Proxied = targetRecordInfo.Proxied,
+                                            Comment = targetRecordInfo.Comment,
+                                            Id = targetRecordInfo.Id,
+                                            Tags = targetRecordInfo.Tags.ToArray(),
+                                            Type = targetRecordInfo.Type,
+                                            TTL = targetRecordInfo.TTL,
+                                            ZoneId = targetRecordInfo.ZoneId
                                         };
 
                                         var updateRequest = new HttpRequestMessage(HttpMethod.Patch, $"https://api.cloudflare.com/client/v4/zones/{targetRecordInfo.ZoneId}/dns_records/{targetRecordInfo.Id}")
